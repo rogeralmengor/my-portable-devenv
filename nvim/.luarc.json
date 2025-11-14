@@ -1,0 +1,10 @@
+{
+    "diagnostics.globals": [
+        "vim",
+        "lspconfig",
+        "config"
+    ],
+    "diagnostics.disable": [
+        "missing-fields"
+    ]
+}
