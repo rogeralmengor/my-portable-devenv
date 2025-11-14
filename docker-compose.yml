@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  devenv:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NVIM_CONFIG_REPO: https://github.com/YOUR_USERNAME/nvim-config.git
+        # Add your private package credentials if needed
+        # ARTIFACTORY_USERNAME: ${ARTIFACTORY_USERNAME}
+        # ARTIFACTORY_PASSWORD: ${ARTIFACTORY_PASSWORD}
+    image: my-portable-devenv:latest
+    container_name: devenv
+    volumes:
+      # Mount current project directory
+      - .:/workspace
+      # Persist nvim plugin data (avoid reinstalling plugins)
+      - nvim-data:/root/.local/share/nvim
+      - nvim-state:/root/.local/state/nvim
+      # Persist Go modules cache
+      - go-cache:/go/pkg/mod
+      # Optional: persist git config
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.ssh:/root/.ssh:ro
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    environment:
+      - TERM=xterm-256color
+    # Optional: expose ports for development servers
+    # ports:
+    #   - "8000:8000"
+    #   - "3000:3000"
+
+volumes:
+  nvim-data:
+    driver: local
+  nvim-state:
+    driver: local
+  go-cache:
+    driver: local
