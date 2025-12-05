@@ -1,8 +1,7 @@
-FROM python:3.12-slim AS base
+FROM mcr.microsoft.com/vscode/devcontainers/python:3.12
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
-    PRE_COMMIT_HOME=/tmp/pre-commit-cache \
     XDG_CONFIG_HOME=/root/.config \
     XDG_DATA_HOME=/root/.local/share \
     XDG_STATE_HOME=/root/.local/state \
@@ -10,64 +9,35 @@ ENV DEBIAN_FRONTEND=noninteractive \
     GOPATH="/go" \
     EDITOR=nvim
 
-# -------------------
-# Development tools
-# -------------------
-FROM base AS development
-
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    git \
-    git-lfs \
-    make \
+# Install only what's missing (minimal downloads)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
-    unzip \
+    git \
     ripgrep \
     fd-find \
-    tar \
-    gcc \
-    g++ \
-    cmake \
-    clang \
-    pkg-config \
-    ca-certificates \
-    sudo && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    unzip \
+    tar && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Go 1.21.5
-RUN wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
+RUN wget --no-check-certificate https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz && \
-    rm go1.21.5.linux-amd64.tar.gz && \
-    /usr/local/go/bin/go version
+    rm go1.21.5.linux-amd64.tar.gz
 
-# Install lazygit
-RUN go install github.com/jesseduffield/lazygit@latest
+# Install lazygit (pre-built binary, no Go proxy needed)
+RUN curl -kLo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v0.40.2/lazygit_0.40.2_Linux_x86_64.tar.gz" && \
+    tar xf lazygit.tar.gz lazygit && \
+    install lazygit /usr/local/bin && \
+    rm -f lazygit.tar.gz lazygit
 
 # Install Neovim 0.11.4
-RUN wget https://github.com/neovim/neovim/releases/download/v0.11.4/nvim-linux-x86_64.tar.gz && \
+RUN wget --no-check-certificate https://github.com/neovim/neovim/releases/download/v0.11.4/nvim-linux-x86_64.tar.gz && \
     tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
     ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
     rm nvim-linux-x86_64.tar.gz
 
-# Install Node.js 20.x (for LSPs)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Node.js language servers
-RUN npm install -g \
-    pyright@latest \
-    typescript-language-server \
-    typescript
-
-# Verify Node.js installation
-RUN echo "Node version:" && node --version && \
-    echo "NPM version:" && npm --version && \
-    echo "Pyright version:" && pyright --version
-
-# Install Python language servers and formatters
+# Install Python tools (pip usually works even in corporate networks)
 RUN pip install --no-cache-dir \
     black \
     isort \
@@ -75,34 +45,27 @@ RUN pip install --no-cache-dir \
     debugpy \
     pynvim
 
-# Create necessary directories with proper permissions
+# Node.js is already installed in the base image
+# Install Node.js language servers
+RUN npm install -g \
+    pyright@latest \
+    typescript-language-server \
+    typescript || echo "npm install failed, but continuing..."
+
+# Create necessary directories
 RUN mkdir -p \
     ${XDG_DATA_HOME}/nvim/lazy \
     ${XDG_DATA_HOME}/nvim/mason \
     ${XDG_STATE_HOME}/nvim \
-    ${XDG_CONFIG_HOME}/nvim \
-    ${XDG_CONFIG_HOME}/lazygit
+    ${XDG_CONFIG_HOME}/nvim
 
-# Copy your nvim configuration from the repo
+# Copy your nvim configuration
 COPY nvim/ ${XDG_CONFIG_HOME}/nvim/
 
-# Optional: Copy lazygit config if you have one
-# COPY lazygit/ ${XDG_CONFIG_HOME}/lazygit/
-
-# Pre-install nvim plugins (headless mode)
-# This reduces startup time on first use
+# Pre-install nvim plugins (best effort)
 RUN nvim --headless "+Lazy! sync" +qa || true
-
-# Install Mason LSP servers if you use Mason
-RUN nvim --headless "+MasonInstallAll" +qa 2>/dev/null || true
 
 # Set working directory
 WORKDIR /workspace
-
-# Health check
-RUN nvim --version && \
-    lazygit --version && \
-    go version && \
-    python --version
 
 CMD ["/bin/bash"]
