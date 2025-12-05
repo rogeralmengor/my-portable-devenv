@@ -1,15 +1,34 @@
-# Docker
-.env
+# Lazy.nvim plugin directory (plugins will be installed in container)
+**/*/lazy-lock.json
 
-# OS
+# Mason installed LSP servers (will be installed in container)
+mason/
+
+# Neovim data files
+*.log
+*.cache
+
+# Swap files
+*.swp
+*.swo
+*~
+
+# Undo history
+undodir/
+
+# Session files
+*.vim
+Session.vim
+
+# Temporary files
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Lua compiled files
+*.luac
 
-# Temp files
-*.tmp
-*.bak
-EOF
+# Plugin-specific
+.luarc.json
+.stylua.toml
+
+# Personal/mac
