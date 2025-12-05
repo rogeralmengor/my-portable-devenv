@@ -28,7 +28,6 @@ require("lazy").setup("plugins", {
 })
 
 
-vim.cmd.colorscheme("onedark")
 
 -- 🎨 Semi-transparent background (MUST come after colorscheme)
 vim.api.nvim_set_hl(0, "Normal", { bg = "#1d2021" })  -- Dark background
@@ -222,7 +221,6 @@ vim.api.nvim_set_keymap('n', '<CR>', 'zz<CR>', { noremap = true, silent = true }
 vim.keymap.set('t', '<C-j>', '<C-j>', { noremap = true })
 vim.keymap.set('t', '<C-k>', '<C-k>', { noremap = true })
 
-
 -- Detecting automatically virtual environment in project 
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
@@ -234,4 +232,24 @@ vim.api.nvim_create_autocmd("VimEnter", {
     end
   end,
 })
+
+require("onedark").setup({
+  function_style = "italic",
+  sidebars = {"qf", "vista_kind", "terminal", "packer"},
+
+  -- Change the "hint" color to the "orange0" color, and make the "error" color bright red
+  colors = {hint = "orange0", error = "#ff0000"},
+
+  -- Overwrite the highlight groups
+  overrides = function(c)
+    return {
+      htmlTag = {fg = c.red0, bg = "#282c34", sp = c.hint, style = "underline"},
+      DiagnosticHint = {link = "LspDiagnosticsDefaultHint"},
+      -- this will remove the highlight groups
+      TSField = {},
+    }
+  end
+})
+
+vim.cmd.colorscheme("onedark")
 
