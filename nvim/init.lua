@@ -222,3 +222,16 @@ vim.api.nvim_set_keymap('n', '<CR>', 'zz<CR>', { noremap = true, silent = true }
 vim.keymap.set('t', '<C-j>', '<C-j>', { noremap = true })
 vim.keymap.set('t', '<C-k>', '<C-k>', { noremap = true })
 
+
+-- Detecting automatically virtual environment in project 
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    local venv = vim.fn.getcwd() .. '/.venv'
+    if vim.fn.isdirectory(venv) == 1 then
+      vim.env.VIRTUAL_ENV = venv
+      vim.env.PATH = venv .. '/Scripts;' .. vim.env.PATH  -- Windows
+      -- vim.env.PATH = venv .. '/bin:' .. vim.env.PATH  -- Linux/Mac
+    end
+  end,
+})
+
