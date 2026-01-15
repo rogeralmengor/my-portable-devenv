@@ -4,7 +4,7 @@ return {
   config = function()
     local configs = require("nvim-treesitter.configs")
     configs.setup({
-      -- Parsers you specifically requested
+      -- Parsers required for your workflow
       ensure_installed = { "python", "xml", "lua", "markdown", "bash" },
       sync_install = false,
       highlight = { enable = true },

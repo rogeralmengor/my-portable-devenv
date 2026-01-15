@@ -1,14 +1,9 @@
 return {
   "richardhapb/pytest.nvim",
   dependencies = { "nvim-treesitter/nvim-treesitter" },
-  opts = {}, -- Define the options here 
+  opts = {},
   config = function(_, opts)
-    require('nvim-treesitter.configs').setup {
-      ensure_installed = { 'python', 'xml' },
-    }
-
+    -- Simply initialize pytest; Treesitter is handled in its own file
     require('pytest').setup(opts)
   end
 }
-
-
