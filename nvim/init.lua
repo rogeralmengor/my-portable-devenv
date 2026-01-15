@@ -251,5 +251,5 @@ require("onedark").setup({
   end
 })
 
-vim.cmd.colorscheme("bamboo-vulgaris")
+vim.cmd.colorscheme("kanagawa")
 
