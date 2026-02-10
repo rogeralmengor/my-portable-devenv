@@ -7,57 +7,42 @@ return {
       "mfussenegger/nvim-dap-python",
       "theHamsta/nvim-dap-virtual-text",
       "williamboman/mason.nvim",
-      -- Neotest for running/debugging specific tests
       "nvim-neotest/neotest",
       "nvim-neotest/neotest-python",
     },
     config = function()
       local dap = require("dap")
       local dapui = require("dapui")
-      local dap_python = require("dap-python")
       local neotest = require("neotest")
 
-      -- 1. Mason Setup (Ensures debugpy is present)
       require("mason").setup()
-      local mr = require("mason-registry")
-      if not mr.is_installed("debugpy") then
-        vim.cmd("MasonInstall debugpy")
-      end
-
-      -- 2. Basic Plugin Setup
       dapui.setup({})
       require("nvim-dap-virtual-text").setup({ commented = true })
 
-      -- 3. THE PATH: Fixed to your container/UV environment
       local python_path = "/opt/venv/bin/python3"
 
-      -- 4. HARD OVERRIDE: Adapter & Configuration
-      -- This stops the debugger from guessing wrong and crashing
+      -- 1. ADAPTER
       dap.adapters.python = {
         type = 'executable',
         command = python_path,
         args = { '-m', 'debugpy.adapter' },
       }
 
+      -- 2. CONFIGURATIONS
       dap.configurations.python = {
-        {
-          type = 'python',
-          request = 'launch',
-          name = "Launch Script (Standard)",
-          program = "${file}",
-          pythonPath = function() return python_path end,
-        },
         {
           type = 'python',
           request = 'launch',
           name = "Debug Test (Pytest)",
           module = "pytest",
-          args = { "${file}", "-sv" },
+          args = { "${file}", "-sv", "--noconftest" }, -- -sv is crucial for seeing output
+          console = "integratedTerminal",
           pythonPath = function() return python_path end,
+          justMyCode = false, -- Set to true if you want to skip library code
         },
       }
 
-      -- 5. NEOTEST Setup (The "Failing Test" Fix)
+      -- 3. NEOTEST
       neotest.setup({
         adapters = {
           require("neotest-python")({
@@ -68,34 +53,32 @@ return {
         },
       })
 
-      -- 6. UI Automation
-      dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
-      dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
-      dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
+      -- 4. UI AUTOMATION (Fixed to keep window open)
+      dap.listeners.after.event_initialized["dapui_config"] = function()
+        dapui.open()
+      end
+      -- We REMOVE/COMMENT the auto-close on terminate 
+      -- so the UI stays open for you to read the error.
+      -- dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
+      -- dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
 
-      -- 7. COOL SYMBOLS
+      -- 5. SYMBOLS
       vim.fn.sign_define("DapBreakpoint", { text = "", texthl = "DiagnosticSignError" })
-      vim.fn.sign_define("DapBreakpointCondition", { text = "", texthl = "DiagnosticSignError" })
       vim.fn.sign_define("DapStopped", { text = "", texthl = "DiagnosticSignWarn", linehl = "Visual" })
 
-      -- 8. KEYMAPS
+      -- 6. KEYMAPS
       local opts = { noremap = true, silent = true }
-      
-      -- Standard Debugging
       vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, opts)
       vim.keymap.set("n", "<leader>dc", dap.continue, opts)
-      vim.keymap.set("n", "<leader>dq", dap.terminate, opts)
-      vim.keymap.set("n", "<leader>du", dapui.toggle, opts)
-
-      -- Test-Specific Debugging
-      -- Use this when cursor is inside a test function
-      vim.keymap.set("n", "<leader>td", function()
-        neotest.run.run({ strategy = "dap" })
-      end, { desc = "Debug Nearest Test" })
-
-      vim.keymap.set("n", "<leader>ts", function()
-        neotest.summary.toggle()
-      end, { desc = "Toggle Test Summary" })
+      vim.keymap.set("n", "<leader>dq", function() 
+        dap.terminate()
+        dapui.close() -- Manually close when you are DONE
+      end, opts)
+      vim.keymap.set("n", "<leader>td", function() neotest.run.run({ strategy = "dap" }) end, opts)
+      vim.keymap.set("n", "<leader>ts", function() neotest.summary.toggle() end, opts)
+      -- Stepping
+      vim.keymap.set("n", "<leader>do", dap.step_over, opts)
+      vim.keymap.set("n", "<leader>di", dap.step_into, opts)
     end,
   },
 }
