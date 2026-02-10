@@ -2,7 +2,7 @@ return {
   {
     "mfussenegger/nvim-dap",
     dependencies = {
-	  "nvim-neotest/nvim-nio",
+      "nvim-neotest/nvim-nio",
       "rcarriga/nvim-dap-ui",
       "mfussenegger/nvim-dap-python",
       "theHamsta/nvim-dap-virtual-text",
@@ -14,75 +14,45 @@ return {
 
       require("dapui").setup({})
       require("nvim-dap-virtual-text").setup({
-        commented = true, -- Show virtual text alongside comment
+        commented = true,
       })
 
+      -- 1. Setup the plugin with the correct path
       dap_python.setup("/opt/venv/bin/python3")
 
-      vim.fn.sign_define("DapBreakpoint", {
-        text = "",
-        texthl = "DiagnosticSignError",
-        linehl = "",
-        numhl = "",
-      })
+      -- 2. FORCE the adapter to use the correct path 
+      -- This bypasses the logic that is looking for '/usr/src/.venv/bin/python'
+      dap.adapters.python = {
+        type = 'executable',
+        command = '/opt/venv/bin/python3',
+        args = { '-m', 'debugpy.adapter' },
+      }
 
-      vim.fn.sign_define("DapBreakpointRejected", {
-        text = "", -- or "❌"
-        texthl = "DiagnosticSignError",
-        linehl = "",
-        numhl = "",
-      })
-
-      vim.fn.sign_define("DapStopped", {
-        text = "", -- or "→"
-        texthl = "DiagnosticSignWarn",
-        linehl = "Visual",
-        numhl = "DiagnosticSignWarn",
-      })
+      -- Gutter Signs
+      vim.fn.sign_define("DapBreakpoint", { text = "", texthl = "DiagnosticSignError" })
+      vim.fn.sign_define("DapBreakpointRejected", { text = "", texthl = "DiagnosticSignError" })
+      vim.fn.sign_define("DapStopped", { text = "", texthl = "DiagnosticSignWarn", linehl = "Visual" })
 
       -- Automatically open/close DAP UI
       dap.listeners.after.event_initialized["dapui_config"] = function()
         dapui.open()
       end
+      dap.listeners.before.event_terminated["dapui_config"] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited["dapui_config"] = function()
+        dapui.close()
+      end
 
+      -- Keymaps
       local opts = { noremap = true, silent = true }
-
-      -- Toggle breakpoint
-      vim.keymap.set("n", "<leader>db", function()
-        dap.toggle_breakpoint()
-      end, opts)
-
-      -- Continue / Start
-      vim.keymap.set("n", "<leader>dc", function()
-        dap.continue()
-      end, opts)
-
-      -- Step Over
-      vim.keymap.set("n", "<leader>do", function()
-        dap.step_over()
-      end, opts)
-
-      -- Step Into
-      vim.keymap.set("n", "<leader>di", function()
-        dap.step_into()
-      end, opts)
-
-      -- Step Out
-      vim.keymap.set("n", "<leader>dO", function()
-        dap.step_out()
-      end, opts)
-			
-      -- Keymap to terminate debugging
-	  vim.keymap.set("n", "<leader>dq", function()
-	      require("dap").terminate()
-      end, opts)
-
-      -- Toggle DAP UI
-      vim.keymap.set("n", "<leader>du", function()
-        dapui.toggle()
-      end, opts)
+      vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, opts)
+      vim.keymap.set("n", "<leader>dc", dap.continue, opts)
+      vim.keymap.set("n", "<leader>do", dap.step_over, opts)
+      vim.keymap.set("n", "<leader>di", dap.step_into, opts)
+      vim.keymap.set("n", "<leader>dO", dap.step_out, opts)
+      vim.keymap.set("n", "<leader>dq", dap.terminate, opts)
+      vim.keymap.set("n", "<leader>du", dapui.toggle, opts)
     end,
   },
 }
-
-
