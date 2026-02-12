@@ -251,5 +251,5 @@ require("onedark").setup({
   end
 })
 
-vim.cmd.colorscheme("onedark")
+vim.cmd.colorscheme("gruvbox-material")
 
