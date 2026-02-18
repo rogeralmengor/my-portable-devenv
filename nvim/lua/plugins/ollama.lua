@@ -1,33 +1,29 @@
 return {
-    "David-Kunz/gen.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    opts = {
-        model = "codellama:7b-instruct", -- Matches your installed model
-        display_mode = "float",          -- Use a floating window
-        show_model = true,
-        width = 45,                      -- Width of the "sidebar"
-        height = 30,                     -- Height of the "sidebar"
-        -- This part positions the window on the right side
-        window_config = { 
-            relative = 'editor', 
-            row = 1, 
-            col = vim.o.columns - 47,    -- Dynamically push to the right edge
-            style = 'minimal', 
-            border = 'rounded' 
-        },
+  "David-Kunz/gen.nvim",
+  opts = {
+    model = "codellama:7b-instruct",
+    display_mode = "float",
+    width = 50,      -- Ancho de la ventana
+    height = 25,     -- Alto de la ventana
+    window_config = {
+      relative = 'editor',
+      row = 2,
+      col = vim.o.columns - 55,
+      border = 'rounded'
     },
-    config = function(_, opts)
-        require('gen').setup(opts)
+  },
+  config = function(_, opts)
+    require('gen').setup(opts)
 
-        -- Custom command to ask a question (replacing your ExplainWithQuestion)
-        vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
-            local prompt = vim.fn.input("Ask Llama: ")
-            if prompt ~= "" then
-                require('gen').exec({ prompt = prompt })
-            end
-        end, { desc = "Ollama: Ask a question" })
+    vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
+      if vim.fn.mode():find('[vV]') then
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'x', true)
+      end
 
-        -- Default Menu (to see Refactor, Explain, etc.)
-        vim.keymap.set({ 'n', 'v' }, '<leader>ol', ':Gen<CR>', { desc = "Ollama Menu" })
-    end
+      local prompt = vim.fn.input("Ask to  Ollama: ")
+      if prompt ~= "" then
+        require('gen').exec({ prompt = prompt })
+      end
+    end, { desc = "Ollama: Preguntar" })
+  end
 }
