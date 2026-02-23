@@ -2,12 +2,11 @@ return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "float", -- Keep this as default to avoid warnings
+    display_mode = "float", -- Satisfies the plugin's check to stop the warning
   },
   config = function(_, opts)
     require('gen').setup(opts)
 
-    -- Custom function to force a vertical split
     vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
       local mode = vim.api.nvim_get_mode().mode
       if mode:find('[vV]') then
@@ -22,42 +21,54 @@ return {
         local question = vim.fn.input("Ask AI: ")
 
         if question ~= "" then
-          -- FORCE a vertical split before executing
-          vim.cmd('vsplit')
-          vim.cmd('wincmd L') -- Move split to the far right
-          
+          -- 1. Check if a chat window already exists
+          local chat_win = nil
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            local buf = vim.api.nvim_win_get_buf(win)
+            if vim.bo[buf].filetype == 'gen' then
+              chat_win = win
+              break
+            end
+          end
+
+          -- 2. If no window, create one. If it exists, just focus it.
+          if not chat_win then
+            vim.cmd('vsplit')
+            vim.cmd('wincmd L')
+            vim.cmd('vertical resize 60')
+          else
+            vim.api.nvim_set_current_win(chat_win)
+          end
+
+          -- 3. Execute with 'split' mode to use the current window we just focused
           require('gen').exec({
             prompt = "Context code:\n```\n" .. selection .. "\n```\n\nQuestion: " .. question,
-            display_mode = "split", -- Plugin internal mode for existing window
+            display_mode = "split", 
           })
 
-          -- Final polish: Enable line wrapping in the new chat window
+          -- 4. Set the Robot Header and clean UI
           vim.defer_fn(function()
-             vim.wo.wrap = true
-             -- Set a nice header with the Robot icon
              local buf = vim.api.nvim_get_current_buf()
-             if vim.bo[buf].filetype == 'gen' then
-                vim.api.nvim_buf_set_lines(buf, 0, 0, false, { "🤖 AI Assistant Response", "-------------------" })
+             vim.wo.wrap = true
+             -- Only add header if it's a fresh buffer
+             if vim.api.nvim_buf_line_count(buf) <= 2 then
+                vim.api.nvim_buf_set_lines(buf, 0, 0, false, { "🤖 AI ASSISTANT", "===================", "" })
              end
           end, 100)
         end
       end, 10)
-    end, { desc = "AI Split Chat" })
+    end, { desc = "AI Chat Split" })
 
-    -- Easy Toggle Focus between Code and Chat
+    -- Jump Focus Toggle
     vim.keymap.set('n', '<leader>gc', function()
-      local found_chat = false
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         local buf = vim.api.nvim_win_get_buf(win)
         if vim.bo[buf].filetype == 'gen' then
           vim.api.nvim_set_current_win(win)
-          found_chat = true
-          break
+          return
         end
       end
-      if not found_chat then
-        print("No active AI chat split found.")
-      end
-    end, { desc = "Jump to AI Chat" })
+      print("No active chat split.")
+    end)
   end
 }
