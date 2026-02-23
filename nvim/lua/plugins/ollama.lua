@@ -2,7 +2,7 @@ return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "split",
+    display_mode = "vertical-split",
     show_model = false,
   },
   config = function(_, opts)
