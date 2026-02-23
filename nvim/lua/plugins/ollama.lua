@@ -2,11 +2,21 @@ return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "split", -- valid value; we'll force vertical ourselves
+    display_mode = "split",
     show_model = false,
   },
   config = function(_, opts)
-    require('gen').setup(opts)
+    -- Patch gen.nvim to open vertically by overriding the split command it uses
+    local gen = require('gen')
+
+    -- Monkey-patch the internal window open to always use vsplit
+    local original_setup = gen.setup
+    gen.setup = function(o)
+      o = o or {}
+      original_setup(o)
+    end
+
+    gen.setup(opts)
 
     vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
       local mode = vim.api.nvim_get_mode().mode
@@ -23,54 +33,70 @@ return {
 
         if question == "" then return end
 
-        -- Save the current window (your code buffer)
         local code_win = vim.api.nvim_get_current_win()
 
-        -- Check if a gen buffer/window already exists
+        -- Check if gen window already exists
         local gen_win = nil
         for _, win in ipairs(vim.api.nvim_list_wins()) do
-          local buf = vim.api.nvim_win_get_buf(win)
-          if vim.bo[buf].filetype == 'gen' then
+          if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'gen' then
             gen_win = win
             break
           end
         end
 
-        -- If no gen window, create a vertical split on the right
         if not gen_win then
-          vim.cmd('vsplit')
-          vim.cmd('enew')
-          gen_win = vim.api.nvim_get_current_win()
-          -- Return focus to code buffer so gen.nvim opens in the right split
-          vim.api.nvim_set_current_win(code_win)
+          -- Force gen.nvim's internal `split` to behave as `vsplit`
+          -- by temporarily setting splitbelow=false and using autocmd to convert
+          local aug = vim.api.nvim_create_augroup("GenVsplit", { clear = true })
+          vim.api.nvim_create_autocmd("BufWinEnter", {
+            group = aug,
+            once = true,
+            callback = function(ev)
+              local buf = ev.buf
+              if vim.bo[buf].filetype ~= 'gen' then return end
+              -- Find the window gen opened (horizontal split)
+              for _, win in ipairs(vim.api.nvim_list_wins()) do
+                if vim.api.nvim_win_get_buf(win) == buf and win ~= code_win then
+                  local win_height = vim.api.nvim_win_get_height(win)
+                  local total_height = vim.o.lines
+                  -- If it's a horizontal split (short height), convert to vsplit
+                  if win_height < total_height - 5 then
+                    -- Close the horizontal split, reopen as vsplit
+                    vim.api.nvim_set_current_win(code_win)
+                    vim.api.nvim_win_close(win, false)
+                    vim.cmd('vsplit')
+                    vim.api.nvim_win_set_buf(vim.api.nvim_get_current_win(), buf)
+                    vim.api.nvim_set_current_win(code_win)
+                  end
+                  break
+                end
+              end
+              vim.api.nvim_del_augroup_by_id(aug)
+            end,
+          })
         end
 
-        require('gen').exec({
+        gen.exec({
           prompt = "Context code:\n```\n" .. selection .. "\n```\n\nQuestion: " .. question,
         })
 
-        -- Polish: wrap + scroll to bottom after response loads
         vim.defer_fn(function()
-          local win = nil
-          for _, w in ipairs(vim.api.nvim_list_wins()) do
-            local buf = vim.api.nvim_win_get_buf(w)
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            local buf = vim.api.nvim_win_get_buf(win)
             if vim.bo[buf].filetype == 'gen' then
-              win = w
+              vim.wo[win].wrap = true
+              pcall(vim.api.nvim_win_set_cursor, win, {
+                vim.api.nvim_buf_line_count(buf), 0
+              })
+              vim.api.nvim_set_current_win(code_win)
               break
             end
           end
-          if win then
-            vim.wo[win].wrap = true
-            local last_line = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(win))
-            pcall(vim.api.nvim_win_set_cursor, win, { last_line, 0 })
-            -- Return cursor to code buffer
-            vim.api.nvim_set_current_win(code_win)
-          end
         end, 300)
+
       end, 10)
     end, { desc = "AI Side-by-Side Chat" })
 
-    -- Focus toggle
     vim.keymap.set('n', '<leader>gc', function()
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'gen' then
