@@ -10,7 +10,7 @@ return {
       row = 1,
       col = vim.o.columns - 48,
       border = 'rounded',
-      focusable = true,
+      focusable = true, -- Ensures you can enter the window
     },
   },
   config = function(_, opts)
@@ -26,8 +26,8 @@ return {
       timer:start(0, 120, vim.schedule_wrap(function()
         if win_id and vim.api.nvim_win_is_valid(win_id) then
           idx = (idx % #spinner_frames) + 1
-          -- Robot icon + simple rotating slash
-          local title = " 🤖 [" .. spinner_frames[idx] .. "] "
+          -- Added text "AI" so you see status even if icon fails
+          local title = " AI [" .. spinner_frames[idx] .. "] "
           vim.api.nvim_win_set_config(win_id, { title = title, title_pos = "center" })
         else
           if timer then
@@ -37,6 +37,7 @@ return {
       end))
     end
 
+    -- Setup keymaps
     vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
       local mode = vim.api.nvim_get_mode().mode
       if mode:find('[vV]') then
@@ -59,30 +60,35 @@ return {
               end
               local win_id = vim.fn.bufwinid(vim.fn.bufnr('gen.nvim'))
               if win_id ~= -1 then
-                -- Green-ish checkmark when done
-                vim.api.nvim_win_set_config(win_id, { title = " 🤖 [✔] ", title_pos = "center" })
+                vim.api.nvim_win_set_config(win_id, { title = " AI [DONE] ", title_pos = "center" })
               end
             end
           })
 
-          -- Trigger animation once the window exists
           vim.defer_fn(function()
             local win_id = vim.fn.bufwinid(vim.fn.bufnr('gen.nvim'))
-            if win_id ~= -1 then start_border_animation(win_id) end
-          end, 100)
+            if win_id ~= -1 then 
+                start_border_animation(win_id) 
+                -- NEW: Set an internal keymap inside the float to yank everything
+                local bufnr = vim.api.nvim_win_get_buf(win_id)
+                vim.keymap.set('n', 'Y', 'ggVG"+y<C-w>p', { buffer = bufnr, desc = "Yank all and return" })
+            end
+          end, 150) -- Increased delay to ensure window is ready
         end
       end, 10)
     end)
 
-    -- Focus keymap to allow yanking
+    -- Improved Focus keymap
     vim.keymap.set('n', '<leader>gc', function()
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         local buf = vim.api.nvim_win_get_buf(win)
-        if vim.bo[buf].filetype == 'gen' then
+        local name = vim.api.nvim_buf_get_name(buf)
+        if name:find('gen.nvim') or vim.bo[buf].filetype == 'gen' then
           vim.api.nvim_set_current_win(win)
+          print("Focusing Chat - Press 'Y' to copy all")
           return
         end
       end
-    end, { desc = "Focus Chat" })
+    end, { desc = "Focus AI Chat" })
   end
 }
