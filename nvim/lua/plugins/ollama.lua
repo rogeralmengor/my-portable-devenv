@@ -2,7 +2,7 @@ return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "float", -- Satisfies the plugin's check to stop the warning
+    display_mode = "float", 
   },
   config = function(_, opts)
     require('gen').setup(opts)
@@ -21,54 +21,65 @@ return {
         local question = vim.fn.input("Ask AI: ")
 
         if question ~= "" then
-          -- 1. Check if a chat window already exists
           local chat_win = nil
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            local buf = vim.api.nvim_win_get_buf(win)
+          local chat_buf = nil
+
+          -- 1. Find existing buffer by filetype
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
             if vim.bo[buf].filetype == 'gen' then
-              chat_win = win
+              chat_buf = buf
               break
             end
           end
 
-          -- 2. If no window, create one. If it exists, just focus it.
-          if not chat_win then
+          -- 2. Handle window/split logic
+          if chat_buf then
+            chat_win = vim.fn.bufwinid(chat_buf)
+            if chat_win == -1 then -- Buffer exists but window was closed
+              vim.cmd('vsplit')
+              vim.api.nvim_set_current_buf(chat_buf)
+              chat_win = vim.api.nvim_get_current_win()
+              vim.cmd('wincmd L')
+            else
+              vim.api.nvim_set_current_win(chat_win)
+            end
+          else
+            -- First time: Create split and buffer
             vim.cmd('vsplit')
             vim.cmd('wincmd L')
             vim.cmd('vertical resize 60')
-          else
-            vim.api.nvim_set_current_win(chat_win)
+            chat_win = vim.api.nvim_get_current_win()
+            chat_buf = vim.api.nvim_get_current_buf()
           end
 
-          -- 3. Execute with 'split' mode to use the current window we just focused
+          -- 3. Fix the 'nil' diagnostic: Ensure chat_buf exists before writing
+          if chat_buf and vim.api.nvim_buf_is_valid(chat_buf) then
+            local last_line = vim.api.nvim_buf_line_count(chat_buf)
+            local header = (last_line <= 1) and {"🤖 AI ASSISTANT", "===="} or {"", "---", "❓ " .. question}
+            vim.api.nvim_buf_set_lines(chat_buf, last_line, -1, false, header)
+            -- Position cursor at the very end
+            vim.api.nvim_win_set_cursor(chat_win, {vim.api.nvim_buf_line_count(chat_buf), 0})
+          end
+
+          -- 4. Execute and FORCE the use of our current buffer
           require('gen').exec({
             prompt = "Context code:\n```\n" .. selection .. "\n```\n\nQuestion: " .. question,
             display_mode = "split", 
           })
 
-          -- 4. Set the Robot Header and clean UI
-          vim.defer_fn(function()
-             local buf = vim.api.nvim_get_current_buf()
-             vim.wo.wrap = true
-             -- Only add header if it's a fresh buffer
-             if vim.api.nvim_buf_line_count(buf) <= 2 then
-                vim.api.nvim_buf_set_lines(buf, 0, 0, false, { "🤖 AI ASSISTANT", "===================", "" })
-             end
-          end, 100)
+          vim.defer_fn(function() vim.wo.wrap = true end, 100)
         end
       end, 10)
-    end, { desc = "AI Chat Split" })
+    end, { desc = "AI Continuous Chat" })
 
-    -- Jump Focus Toggle
+    -- leader gc to focus
     vim.keymap.set('n', '<leader>gc', function()
       for _, win in ipairs(vim.api.nvim_list_wins()) do
-        local buf = vim.api.nvim_win_get_buf(win)
-        if vim.bo[buf].filetype == 'gen' then
+        if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'gen' then
           vim.api.nvim_set_current_win(win)
           return
         end
       end
-      print("No active chat split.")
     end)
   end
 }
