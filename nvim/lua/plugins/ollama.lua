@@ -2,43 +2,16 @@ return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "float",
-    width = 45,
-    height = vim.o.lines - 8,
-    window_config = {
-      relative = 'editor',
-      row = 1,
-      col = vim.o.columns - 48,
-      border = 'rounded',
-      focusable = true, -- Ensures you can enter the window
-    },
+    display_mode = "vsplit", -- Changed from 'float' to 'vsplit'
+    show_model = true,
+    width = 50, -- This now controls the width of the vertical split
   },
   config = function(_, opts)
     require('gen').setup(opts)
 
-    local spinner_frames = { " / ", " — ", " \\ ", " | " }
-    local timer = nil
-
-    -- Function to animate the border title
-    local function start_border_animation(win_id)
-      local idx = 1
-      timer = vim.loop.new_timer()
-      timer:start(0, 120, vim.schedule_wrap(function()
-        if win_id and vim.api.nvim_win_is_valid(win_id) then
-          idx = (idx % #spinner_frames) + 1
-          -- Added text "AI" so you see status even if icon fails
-          local title = " AI [" .. spinner_frames[idx] .. "] "
-          vim.api.nvim_win_set_config(win_id, { title = title, title_pos = "center" })
-        else
-          if timer then
-            timer:stop(); timer = nil
-          end
-        end
-      end))
-    end
-
-    -- Setup keymaps
+    -- Custom function to handle the vertical split setup
     vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
+      -- 1. Handle visual selection
       local mode = vim.api.nvim_get_mode().mode
       if mode:find('[vV]') then
         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'x', true)
@@ -49,46 +22,53 @@ return {
         local end_line = vim.api.nvim_buf_get_mark(0, '>')[1]
         local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
         local selection = table.concat(lines, "\n")
-        local question = vim.fn.input("Ask: ")
+        
+        -- 2. Ask the question
+        local question = vim.fn.input("Ask AI: ")
 
         if question ~= "" then
           require('gen').exec({
             prompt = "Context code:\n```\n" .. selection .. "\n```\n\nQuestion: " .. question,
-            callback = function()
-              if timer then
-                timer:stop(); timer = nil
-              end
-              local win_id = vim.fn.bufwinid(vim.fn.bufnr('gen.nvim'))
-              if win_id ~= -1 then
-                vim.api.nvim_win_set_config(win_id, { title = " AI [DONE] ", title_pos = "center" })
-              end
-            end
           })
-
+          
+          -- 3. Automatically jump to the chat split once it opens
           vim.defer_fn(function()
-            local win_id = vim.fn.bufwinid(vim.fn.bufnr('gen.nvim'))
-            if win_id ~= -1 then 
-                start_border_animation(win_id) 
-                -- NEW: Set an internal keymap inside the float to yank everything
-                local bufnr = vim.api.nvim_win_get_buf(win_id)
-                vim.keymap.set('n', 'Y', 'ggVG"+y<C-w>p', { buffer = bufnr, desc = "Yank all and return" })
+            for _, win in ipairs(vim.api.nvim_list_wins()) do
+              local buf = vim.api.nvim_win_get_buf(win)
+              if vim.bo[buf].filetype == 'gen' then
+                vim.api.nvim_set_current_win(win)
+                -- Enable line wrapping so the explanation is easy to read
+                vim.wo[win].wrap = true
+                break
+              end
             end
-          end, 150) -- Increased delay to ensure window is ready
+          end, 200)
         end
       end, 10)
-    end)
+    end, { desc = "AI Chat (Vertical Split)" })
 
-    -- Improved Focus keymap
+    -- Easy Toggle Focus between Code and Chat
     vim.keymap.set('n', '<leader>gc', function()
+      local current_win = vim.api.nvim_get_current_win()
+      local target_win = nil
+      
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         local buf = vim.api.nvim_win_get_buf(win)
-        local name = vim.api.nvim_buf_get_name(buf)
-        if name:find('gen.nvim') or vim.bo[buf].filetype == 'gen' then
-          vim.api.nvim_set_current_win(win)
-          print("Focusing Chat - Press 'Y' to copy all")
-          return
+        if vim.bo[buf].filetype == 'gen' then
+          target_win = win
+          break
         end
       end
-    end, { desc = "Focus AI Chat" })
+
+      if target_win then
+        if current_win == target_win then
+          vim.cmd('wincmd p') -- Jump back to previous (Code)
+        else
+          vim.api.nvim_set_current_win(target_win) -- Jump to Chat
+        end
+      else
+        print("Chat split not open")
+      end
+    end, { desc = "Toggle Focus: Code/AI Chat" })
   end
 }
