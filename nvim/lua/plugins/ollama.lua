@@ -1,13 +1,17 @@
+-- Define a global variable to track the chat buffer across multiple questions
+_G.ai_chat_buf = _G.ai_chat_buf or nil
+
 return {
   "David-Kunz/gen.nvim",
   opts = {
     model = "qwen2.5-coder:1.5b",
-    display_mode = "float", 
+    display_mode = "float", -- Keep this so the plugin doesn't complain
   },
   config = function(_, opts)
     require('gen').setup(opts)
 
     vim.keymap.set({ 'n', 'v' }, '<leader>eq', function()
+      -- 1. Handle Visual Selection
       local mode = vim.api.nvim_get_mode().mode
       if mode:find('[vV]') then
         vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'x', true)
@@ -22,62 +26,60 @@ return {
 
         if question ~= "" then
           local chat_win = nil
-          local chat_buf = nil
 
-          -- 1. Find existing buffer by filetype
-          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.bo[buf].filetype == 'gen' then
-              chat_buf = buf
-              break
-            end
-          end
-
-          -- 2. Handle window/split logic
-          if chat_buf then
-            chat_win = vim.fn.bufwinid(chat_buf)
-            if chat_win == -1 then -- Buffer exists but window was closed
-              vim.cmd('vsplit')
-              vim.api.nvim_set_current_buf(chat_buf)
-              chat_win = vim.api.nvim_get_current_win()
-              vim.cmd('wincmd L')
-            else
-              vim.api.nvim_set_current_win(chat_win)
-            end
-          else
-            -- First time: Create split and buffer
+          -- 2. Find or Create the Buffer
+          if not _G.ai_chat_buf or not vim.api.nvim_buf_is_valid(_G.ai_chat_buf) then
             vim.cmd('vsplit')
             vim.cmd('wincmd L')
             vim.cmd('vertical resize 60')
+            _G.ai_chat_buf = vim.api.nvim_get_current_buf()
+            -- Set filetype so we can find it later
+            vim.bo[_G.ai_chat_buf].filetype = 'gen'
+            vim.api.nvim_buf_set_lines(_G.ai_chat_buf, 0, -1, false, { "🤖 AI ASSISTANT", "===================", "" })
+          end
+
+          -- 3. Find or Create the Window
+          chat_win = vim.fn.bufwinid(_G.ai_chat_buf)
+          if chat_win == -1 then
+            vim.cmd('vsplit')
+            vim.api.nvim_set_current_buf(_G.ai_chat_buf)
             chat_win = vim.api.nvim_get_current_win()
-            chat_buf = vim.api.nvim_get_current_buf()
+            vim.cmd('wincmd L')
+          else
+            vim.api.nvim_set_current_win(chat_win)
           end
 
-          -- 3. Fix the 'nil' diagnostic: Ensure chat_buf exists before writing
-          if chat_buf and vim.api.nvim_buf_is_valid(chat_buf) then
-            local last_line = vim.api.nvim_buf_line_count(chat_buf)
-            local header = (last_line <= 1) and {"🤖 AI ASSISTANT", "===="} or {"", "---", "❓ " .. question}
-            vim.api.nvim_buf_set_lines(chat_buf, last_line, -1, false, header)
-            -- Position cursor at the very end
-            vim.api.nvim_win_set_cursor(chat_win, {vim.api.nvim_buf_line_count(chat_buf), 0})
-          end
+          -- 4. Append the Question & Separator (Fixing the Nil diagnostic)
+          local b = _G.ai_chat_buf -- Local reference to satisfy LSP
+          local last_line = vim.api.nvim_buf_line_count(b)
+          vim.api.nvim_buf_set_lines(b, last_line, -1, false, { "", "---", "❓ " .. question, "" })
 
-          -- 4. Execute and FORCE the use of our current buffer
+          -- Move cursor to bottom so plugin appends correctly
+          local new_last_line = vim.api.nvim_buf_line_count(b)
+          vim.api.nvim_win_set_cursor(chat_win, { new_last_line, 0 })
+
+          -- 5. Execute - This is the key: we are already IN the right window/buffer
           require('gen').exec({
             prompt = "Context code:\n```\n" .. selection .. "\n```\n\nQuestion: " .. question,
-            display_mode = "split", 
+            display_mode = "split",
           })
 
-          vim.defer_fn(function() vim.wo.wrap = true end, 100)
+          vim.defer_fn(function()
+            vim.wo.wrap = true
+            -- Follow the output
+            local last = vim.api.nvim_buf_line_count(b)
+            vim.api.nvim_win_set_cursor(chat_win, { last, 0 })
+          end, 100)
         end
       end, 10)
     end, { desc = "AI Continuous Chat" })
 
-    -- leader gc to focus
+    -- Jump Focus with leader gc
     vim.keymap.set('n', '<leader>gc', function()
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'gen' then
+      if _G.ai_chat_buf and vim.api.nvim_buf_is_valid(_G.ai_chat_buf) then
+        local win = vim.fn.bufwinid(_G.ai_chat_buf)
+        if win ~= -1 then
           vim.api.nvim_set_current_win(win)
-          return
         end
       end
     end)
