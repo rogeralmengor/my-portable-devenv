@@ -11,7 +11,7 @@ return {
     require("nvim-treesitter.install").compilers = { "zig", "gcc" }
 
     configs.setup({
-      ensure_installed = { "python", "xml", "lua", "markdown", "bash", "luadoc", "luap" },
+      ensure_installed = { "python", "xml", "lua", "markdown", "bash"},
       sync_install = false,
       auto_install = false,  -- disable auto to avoid cascade errors
       highlight = {
