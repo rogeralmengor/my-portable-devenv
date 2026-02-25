@@ -253,3 +253,5 @@ require("onedark").setup({
 
 vim.cmd.colorscheme("gruvbox-material")
 
+
+vim.g.lazyvim_check_order = false
