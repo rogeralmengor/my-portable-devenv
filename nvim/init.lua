@@ -227,8 +227,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
     local venv = vim.fn.getcwd() .. '/.venv'
     if vim.fn.isdirectory(venv) == 1 then
       vim.env.VIRTUAL_ENV = venv
-      vim.env.PATH = venv .. '/Scripts;' .. vim.env.PATH  -- Windows
-      -- vim.env.PATH = venv .. '/bin:' .. vim.env.PATH  -- Linux/Mac
+      vim.env.PATH = venv .. '/bin:' .. vim.env.PATH  -- Linux/Mac
     end
   end,
 })
