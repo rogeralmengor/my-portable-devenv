@@ -250,7 +250,7 @@ require("onedark").setup({
   end
 })
 
-vim.cmd.colorscheme("gruvbox-material")
+vim.cmd.colorscheme("nordic")
 
 
 vim.g.lazyvim_check_order = false
