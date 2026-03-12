@@ -40,6 +40,17 @@ return {
 
       -- 3. CONFIGURATIONS: add pytest launch config on top of dap-python defaults
       table.insert(dap.configurations.python, {
+      type = "python",
+      request = "launch",
+      name = "Debug Current File",
+      program = "${file}",          -- runs whatever file is open in nvim
+      console = "integratedTerminal",
+      justMyCode = false,
+      cwd = "${workspaceFolder}",   -- CRUCIAL: sets CWD to your project root
+                                -- so config files are found correctly
+      })
+
+      table.insert(dap.configurations.python, {
         type = "python",
         request = "launch",
         name = "Debug Test (Pytest)",
@@ -47,6 +58,7 @@ return {
         args = { "${file}", "-sv", "--no-header" },
         console = "integratedTerminal",
         justMyCode = false,
+        cwd = "${workspaceFolder}",
       })
 
       -- 4. NEOTEST
