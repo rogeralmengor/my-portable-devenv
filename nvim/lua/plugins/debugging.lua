@@ -20,6 +20,9 @@ return {
       dapui.setup({})
       require("nvim-dap-virtual-text").setup({ commented = true })
 
+      -- Always show signcolumn so breakpoint icons don't shift text
+      vim.opt.signcolumn = "yes"
+
       -- 1. ADAPTER: use system python3 (has debugpy installed globally via Dockerfile)
       dap_python.setup("/usr/local/bin/python3")
       dap_python.test_runner = "pytest"
@@ -71,9 +74,29 @@ return {
       -- dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
       -- dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
 
-      -- 6. SYMBOLS
-      vim.fn.sign_define("DapBreakpoint", { text = "", texthl = "DiagnosticSignError" })
-      vim.fn.sign_define("DapStopped", { text = "", texthl = "DiagnosticSignWarn", linehl = "Visual" })
+      -- 6. SYMBOLS (defined AFTER dap_python.setup so they are not overwritten)
+      vim.fn.sign_define("DapBreakpoint", {
+        text = "●",
+        texthl = "DiagnosticSignError",
+      })
+      vim.fn.sign_define("DapBreakpointCondition", {
+        text = "◆",
+        texthl = "DiagnosticSignWarn",
+      })
+      vim.fn.sign_define("DapBreakpointRejected", {
+        text = "○",
+        texthl = "DiagnosticSignError",
+      })
+      vim.fn.sign_define("DapStopped", {
+        text = "▶",
+        texthl = "DiagnosticSignWarn",
+        linehl = "Visual",
+        numhl = "DiagnosticSignWarn",
+      })
+      vim.fn.sign_define("DapLogPoint", {
+        text = "◉",
+        texthl = "DiagnosticSignInfo",
+      })
 
       -- 7. KEYMAPS
       local opts = { noremap = true, silent = true }
