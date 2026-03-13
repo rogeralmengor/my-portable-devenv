@@ -289,3 +289,11 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 })
 
 vim.g.lazyvim_check_order = false
+
+require("notify").setup({
+  -- Set this to your terminal's background color or #000000
+  background_colour = "#000000", 
+  
+  -- Optional: if you want the actual notifications to be transparent too
+  opacity = 0.8, 
+})
