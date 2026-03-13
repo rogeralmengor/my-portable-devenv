@@ -232,25 +232,60 @@ vim.api.nvim_create_autocmd("VimEnter", {
   end,
 })
 
-require("onedark").setup({
-  function_style = "italic",
-  sidebars = {"qf", "vista_kind", "terminal", "packer"},
+-- 🎨 NORDIC CONFIGURATION (Integrated Transparency & Selection)
+require('nordic').setup({
+    -- 1. Built-in Transparency Settings
+    transparent = {
+        bg = true,      -- Transparent editor background
+        float = true,   -- Transparent floating windows (LSP, etc.)
+    },
+    -- 2. General Style
+    italic_comments = true,
+    cursorline = {
+        bold = false,
+        number = true,
+        background = true,
+    },
+    -- 3. Custom Highlights (Overrides)
+    on_highlights = function(c, hl)
+        -- --- 🎯 YOUR ONEDARK-STYLE TWEAKS ---
+        hl.DiagnosticHint = { fg = "#ff922b" } -- Orange hint
+        hl.DiagnosticError = { fg = "#ff0000" } -- Bright red error
+        hl.htmlTag = { fg = c.red, bg = "#282c34", sp = "#ff922b", underline = true }
+        hl.TSField = {} 
 
-  -- Change the "hint" color to the "orange0" color, and make the "error" color bright red
-  colors = {hint = "orange0", error = "#ff0000"},
+        -- --- 🎯 VISUAL SELECTION & YANK ---
+        -- Making the visual selection lighter than the background
+        hl.Visual = { bg = "#4c566a", fg = "NONE" } 
+        -- Defining the group for the yank flash
+        hl.YankHighlight = { bg = "#ebcb8b", fg = "#2e3440" }
 
-  -- Overwrite the highlight groups
-  overrides = function(c)
-    return {
-      htmlTag = {fg = c.red0, bg = "#282c34", sp = c.hint, style = "underline"},
-      DiagnosticHint = {link = "LspDiagnosticsDefaultHint"},
-      -- this will remove the highlight groups
-      TSField = {},
-    }
-  end
+        -- --- 🎯 FORCED TRANSPARENCY ---
+        -- This ensures these groups are ALWAYS transparent within Nordic
+        local transparent_groups = {
+            "Normal", "NormalNC", "LineNr", "NonText", 
+            "SignColumn", "EndOfBuffer", "FoldColumn"
+        }
+        for _, group in ipairs(transparent_groups) do
+            hl[group] = { bg = "NONE", ctermbg = "NONE" }
+        end
+    end,
 })
 
+-- Apply the colorscheme
 vim.cmd.colorscheme("nordic")
 
+-- --- 🎯 1-SECOND YANK HIGHLIGHT ---
+-- This triggers the visual flash when you copy text
+vim.api.nvim_create_autocmd("TextYankPost", {
+    desc = "Highlight when yanking text",
+    group = vim.api.nvim_create_augroup("highlight-yank", { clear = true }),
+    callback = function()
+        vim.highlight.on_yank({
+            higroup = "YankHighlight",
+            timeout = 1000, -- Lasts for 1 second
+        })
+    end,
+})
 
 vim.g.lazyvim_check_order = false
