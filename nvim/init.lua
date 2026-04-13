@@ -297,3 +297,7 @@ require("notify").setup({
   -- Optional: if you want the actual notifications to be transparent too
   opacity = 0.8, 
 })
+
+require('lualine').setup {
+  options = { theme = 'auto' }  -- auto-matches your colorscheme
+}
