@@ -18,7 +18,22 @@ return {
 
       require("mason").setup()
       dapui.setup({})
-      require("nvim-dap-virtual-text").setup({ commented = true })
+      require("nvim-dap-virtual-text").setup({
+	      enabled = true,
+      	      enabled_commands = true,
+      		highlight_changed_variables = true,
+		show_stop_reason = true,
+		commented = false,
+		only_first_definition = false,
+		all_references = true,
+		display_callback = function(variable, buf, stackframe, node, options)
+			if options.virt_text_pos == 'inline' then
+				return ' = ' .. variable.value
+			else
+				return variable.name .. ' = ' .. variable.value
+			end
+		end,
+		virt_text_pos = vim.fn.has('nvim-0.10') == 1 and 'inline' or 'eol',})
 
       -- Always show signcolumn so breakpoint icons don't shift text
       vim.opt.signcolumn = "yes"
