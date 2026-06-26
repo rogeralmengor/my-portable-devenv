@@ -272,8 +272,6 @@ require('nordic').setup({
     end,
 })
 
--- Apply the colorscheme
-vim.cmd.colorscheme("nordic")
 
 -- =========================================================================
 -- 🎨 UNIVERSAL TRANSPARENCY FOR ANY COLORSCHEME
@@ -309,6 +307,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 -- Trigger it once immediately for the initial load
 apply_transparency()
 
+-- Apply the colorscheme
+vim.cmd.colorscheme("nord")
 
 -- --- 🎯 1-SECOND YANK HIGHLIGHT ---
 -- This triggers the visual flash when you copy text
