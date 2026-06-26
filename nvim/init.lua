@@ -275,6 +275,41 @@ require('nordic').setup({
 -- Apply the colorscheme
 vim.cmd.colorscheme("nordic")
 
+-- =========================================================================
+-- 🎨 UNIVERSAL TRANSPARENCY FOR ANY COLORSCHEME
+-- =========================================================================
+local function apply_transparency()
+  -- The target UI groups that need their background stripped
+  local groups = {
+    "Normal",
+    "NormalNC",
+    "NormalFloat",  -- Transparent floating windows (LSP popups)
+    "FloatBorder",  -- Transparent borders around floating windows
+    "LineNr",
+    "CursorLineNr",
+    "SignColumn",
+    "EndOfBuffer",
+    "Folded",
+    "FoldColumn",
+    "StatusLine",
+    "StatusLineNC",
+  }
+  
+  for _, group in ipairs(groups) do
+    vim.api.nvim_set_hl(0, group, { bg = "NONE", ctermbg = "NONE" })
+  end
+end
+
+-- Create an autocommand that fires EVERY time a colorscheme is loaded
+vim.api.nvim_create_autocmd("ColorScheme", {
+  pattern = "*",
+  callback = apply_transparency,
+})
+
+-- Trigger it once immediately for the initial load
+apply_transparency()
+
+
 -- --- 🎯 1-SECOND YANK HIGHLIGHT ---
 -- This triggers the visual flash when you copy text
 vim.api.nvim_create_autocmd("TextYankPost", {
