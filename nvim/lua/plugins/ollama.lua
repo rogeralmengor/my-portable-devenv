@@ -3,7 +3,7 @@ return {
   event = "VeryLazy",
   lazy = false,
   version = false, -- Always use the latest version for local LLM improvements
-  build = "make",  -- Builds the internal parser for codebase search
+  build = "make",  -- Builds the local repository parser (no Docker required)
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
     "stevearc/dressing.nvim",
@@ -19,22 +19,18 @@ return {
     provider = "ollama",
     auto_suggestions_provider = "ollama", -- Enables Copilot-like inline suggestions
     
-    -- Corrected structure using the new 'providers' table instead of 'vendors'
     providers = {
       ollama = {
         __inherited_from = "openai",
-        api_key_name = "", -- Empty string bypasses the API key check
+        api_key_name = "", 
         endpoint = "http://127.0.0.1:11434/v1",
         model = "qwen2.5-coder:7b", -- Main LLM for code generation and chat
       },
     },
 
-    -- Local RAG configuration to read your entire project
+    -- Disable the Docker-based RAG service
     rag_service = {
-      enabled = true,
-      provider = "ollama",
-      llm_model = "qwen2.5-coder:7b",
-      embed_model = "nomic-embed-text", -- Text embedding model to index your codebase
+      enabled = false,
     },
 
     behaviour = {
@@ -46,12 +42,6 @@ return {
     },
   },
   config = function(_, opts)
-    -- We set a dummy environment variable here to prevent the RAG service 
-    -- from crashing if it checks for an OpenAI key before initializing Ollama.
-    if vim.fn.getenv("OPENAI_API_KEY") == vim.NIL then
-      vim.fn.setenv("OPENAI_API_KEY", "dummy-key-for-local-ollama")
-    end
-
     require("avante").setup(opts)
 
     -- Custom Keymaps (English descriptions)
@@ -71,4 +61,4 @@ return {
       vim.cmd("AvanteToggle")
     end, { desc = "AI: Toggle Sidebar Chat" })
   end
-} 
+}
