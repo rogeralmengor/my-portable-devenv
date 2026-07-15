@@ -16,21 +16,26 @@ return {
     }
   },
   opts = {
-    provider = "ollama",
-    auto_suggestions_provider = "ollama", -- Enables Copilot-like inline suggestions
-    
-    providers = {
-      ollama = {
-        __inherited_from = "openai",
-        api_key_name = "", 
-        endpoint = "http://127.0.0.1:11434/v1",
-        model = "qwen2.5-coder:1.5b", -- Main LLM for code generation and chat
-      },
+    provider = "gemini",
+    auto_suggestions_provider = "gemini", -- Enables Copilot-like inline suggestions
+
+    gemini = {
+	    model = "gemini-2.5-flash",
+	    timeout = 30000,
+	    temperature = 0,
+	    max_tokens = 4096,
     },
 
     -- Disable the Docker-based RAG service
     rag_service = {
       enabled = false,
+    },
+
+    mappings = {
+	submit = {
+		normal = "<CR>",
+		insert = "<CR>",
+	},
     },
 
     behaviour = {
