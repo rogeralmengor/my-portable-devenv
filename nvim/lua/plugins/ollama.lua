@@ -22,7 +22,7 @@ return {
     -- New Migrated Providers Structure
     providers = {
       gemini = {
-        model = "gemini-1.5-flash", -- Highly stable, incredibly fast, and active
+        model = "gemini-pro", -- Highly stable, incredibly fast, and active
         timeout = 30000,
         extra_request_body = {
           temperature = 0,
