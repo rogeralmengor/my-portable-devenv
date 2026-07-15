@@ -19,23 +19,28 @@ return {
     provider = "gemini",
     auto_suggestions_provider = "gemini", -- Enables Copilot-like inline suggestions
 
-    gemini = {
-	    model = "gemini-2.5-flash",
-	    timeout = 30000,
-	    temperature = 0,
-	    max_tokens = 4096,
+    -- New Migrated Providers Structure
+    providers = {
+      gemini = {
+        model = "gemini-1.5-flash", -- Highly stable, incredibly fast, and active
+        timeout = 30000,
+        extra_request_body = {
+          temperature = 0,
+        },
+      },
+    },
+
+    -- Remapped submit keys to use Enter (<CR>) instead of Ctrl+S
+    mappings = {
+      submit = {
+        normal = "<CR>",
+        insert = "<CR>",
+      },
     },
 
     -- Disable the Docker-based RAG service
     rag_service = {
       enabled = false,
-    },
-
-    mappings = {
-	submit = {
-		normal = "<CR>",
-		insert = "<CR>",
-	},
     },
 
     behaviour = {
@@ -49,8 +54,6 @@ return {
   config = function(_, opts)
     require("avante").setup(opts)
 
-    -- Custom Keymaps (English descriptions)
-    
     -- Visual Mode: Select code and press <leader>eq to ask questions about it
     vim.keymap.set("v", "<leader>eq", function()
       vim.cmd("AvanteAsk")
