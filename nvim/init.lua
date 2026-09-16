@@ -308,7 +308,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 apply_transparency()
 
 -- Apply the colorscheme
-vim.cmd.colorscheme("nord")
+vim.cmd.colorscheme("gruvbox-material")
 
 -- --- 🎯 1-SECOND YANK HIGHLIGHT ---
 -- This triggers the visual flash when you copy text
