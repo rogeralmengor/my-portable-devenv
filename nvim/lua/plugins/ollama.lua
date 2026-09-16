@@ -11,20 +11,30 @@ return {
     "MunifTanjim/nui.nvim",
     "nvim-tree/nvim-web-devicons", -- Optional, for icons
     {
-      "hrsh7th/nvim-cmp", 
+      "hrsh7th/nvim-cmp",
       optional = true,
     }
   },
   opts = {
     provider = "ollama",
     auto_suggestions_provider = "ollama", -- Enables Copilot-like inline suggestions
-    
+
     providers = {
       ollama = {
         __inherited_from = "openai",
-        api_key_name = "", 
+        api_key_name = "",
         endpoint = "http://127.0.0.1:11434/v1",
-        model = "phi4-mini", -- Main LLM for code generation and chat
+        model = "qwen2.5-coder:7b", -- Lightweight, code-tuned local model (swap to 3b/1.5b if RAM-limited)
+      },
+    },
+
+    -- Fix: Avante's default insert-mode submit key is <C-s>, which collides
+    -- with terminal XON/XOFF flow control inside tmux (freezes the pane
+    -- instead of submitting). Remap to <C-g>, which has no special tty meaning.
+    mappings = {
+      submit = {
+        normal = "<CR>",
+        insert = "<C-g>",
       },
     },
 
@@ -45,7 +55,7 @@ return {
     require("avante").setup(opts)
 
     -- Custom Keymaps (English descriptions)
-    
+
     -- Visual Mode: Select code and press <leader>eq to ask questions about it
     vim.keymap.set("v", "<leader>eq", function()
       vim.cmd("AvanteAsk")
