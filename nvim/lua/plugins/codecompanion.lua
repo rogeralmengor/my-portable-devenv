@@ -1,5 +1,11 @@
 return {
   "olimorris/codecompanion.nvim",
+  cmd = {
+    "CodeCompanion",
+    "CodeCompanionChat",
+    "CodeCompanionActions",
+    "CodeCompanionCmd",
+  },
   dependencies = {
     "nvim-lua/plenary.nvim",
     "nvim-treesitter/nvim-treesitter",
@@ -24,7 +30,9 @@ return {
       },
     })
 
-    -- Keymap to toggle CodeCompanion chat easily in Normal or Visual mode
-    vim.keymap.set({ "n", "v" }, "<leader>ac", "<cmd>CodeCompanionChat Toggle<CR>", { desc = "Toggle AI Chat" })
+    -- Toggle AI Chat buffer using CodeCompanion's built-in Lua API
+    vim.keymap.set({ "n", "v" }, "<leader>ac", function()
+      require("codecompanion").toggle()
+    end, { desc = "Toggle AI Chat" })
   end,
 }
