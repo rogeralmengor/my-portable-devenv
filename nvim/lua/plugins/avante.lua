@@ -2,14 +2,13 @@ return {
   "yetone/avante.nvim",
   event = "VeryLazy",
   lazy = false,
-  version = false, -- set to `false` to fetch the latest changes
+  version = false,
   opts = {
     provider = "ollama",
     vendors = {
       ollama = {
-        -- Point to your Windows host via Docker's bridge gateway
         endpoint = "http://host.docker.internal:11434",
-        model = "qwen2.5-coder:7b", -- Replace with your lightweight local Python coding model (e.g., qwen2.5-coder:7b or deepseek-coder:6.7b)
+        model = "qwen2.5-coder:7b",
         parse_curl_args = function(opts, code_opts)
           return {
             url = opts.endpoint .. "/api/chat",
@@ -37,4 +36,4 @@ return {
     "MunifTanjim/nui.nvim",
     "nvim-tree/nvim-web-devicons",
   },
-},
+}
